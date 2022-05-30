@@ -97,8 +97,8 @@ class Experiment:
             current_run = self.runs.pop()
             current_run.run(verbose, info=f' | {total_runs - len(self.runs)}/{total_runs}')
             self.completed_runs.append(current_run)
-        self.completed_runs.sort(key = lambda x:x.final_avg_extrinsic, reverse=True)
-        self.save()
+            self.completed_runs.sort(key = lambda x:x.final_avg_extrinsic, reverse=True)
+            self.save()
 
     def save(self):
         # Save expermient_dict

@@ -318,7 +318,7 @@ class LODA:
         log_probs = policies.log_prob(self.action_buffer.view(-1, 1))
         ratios = torch.exp(self.log_prob_buffer.view(-1, 1) - log_probs)
         if self.ppo_epsilon is None:
-            loss = -(normalized_advantages * log_probs).mean()
+            loss = -(normalized_advantages * ratios).mean()
         else:
             # Surrogate Loss
             surr1 = ratios * normalized_advantages
