@@ -1,5 +1,5 @@
 input_dim, 4
-intrinsic_dim, 16
+intrinsic_dim, 4
 action_dim, 2
 policy_lr, 0.00036787944117144236
 approximator_lr, 0.001
@@ -17,4 +17,4 @@ critic_non_linearity, tanh
 reward_discount, 0.95
 seed, 42
 run_id, run_19
-Final_Avg_Extrinsic_Score, 15.08787346221441
+Final_Avg_Extrinsic_Score, 10.634938409854424
