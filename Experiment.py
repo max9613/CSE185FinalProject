@@ -6,6 +6,7 @@ import gym
 import os
 from LODA import LODA  
 
+# A search across hyper parameters for a fixed enviroment.
 class Experiment:
 
     """
@@ -32,6 +33,7 @@ class Experiment:
     """
 
     def __init__(self, experiment_dict, root, runs=None):
+        # Load in experiment dict.
         dummy_env = gym.make(experiment_dict['env_id'])
         self.experiment_dict = experiment_dict
         self.name = experiment_dict['name']
@@ -53,8 +55,10 @@ class Experiment:
         self.completed_runs = []
         self.run_count = 0
         self.path = root + f'{self.name}/' 
+        # Create directory.
         if not os.path.exists(self.path):
             os.mkdir(self.path)
+        # Create runs.
         if runs is None:
             for intrinsic_dim in self.possible_intrinsic_dims:
                 for gradient_decay in self.possible_gradient_decays:
@@ -90,6 +94,7 @@ class Experiment:
             self.runs = runs
             self.run_count = len(self.runs)
 
+    # Run and save all runs.
     def run(self, verbose=False):
         assert len(self.runs) > 0
         total_runs = len(self.runs)
@@ -100,6 +105,7 @@ class Experiment:
             self.completed_runs.sort(key = lambda x:x.final_avg_extrinsic, reverse=True)
             self.save()
 
+    # Save info about experiment and completed runs.
     def save(self):
         # Save expermient_dict
         with open(f'{self.path}{self.name}_experiment_dict.csv', 'w') as f:
@@ -112,7 +118,7 @@ class Experiment:
                 f.write("%s, %s\n" % (run.run_id, run.final_avg_extrinsic))
 
         
-
+# A single run of hyper parameters
 class Run:
 
     def __init__(self, agent_dict, env_id, steps, root, eval_percentage):
@@ -185,6 +191,7 @@ class Run:
 
         self._saved = True
 
+    # Run if the experiment is complete.
     def complete(self):
         return self._complete
 

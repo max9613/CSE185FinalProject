@@ -148,9 +148,11 @@ class LODA:
             self.critic_optimizer = optim.Adam(list(self.intrinsic_critics.parameters()) + list(self.external_critic.parameters()), lr=self.critic_lr)
         self.policy_optimizer = optim.Adam(self.policies.parameters(), lr=self.policy_lr, eps=1e-05)
 
+    # Gets the image of x under the linear transformations represented by self.approximators
     def approximate(self, x):
         return F.linear(x, self.approximators.transpose(0, 1), torch.zeros(1))
 
+    # Gets the critic values for x.
     def critique(self, x):
         if self.non_linear_critic:
             intrinsic = self.intrinsic_critics(x)
@@ -162,6 +164,7 @@ class LODA:
             
         return F.linear(x, self.critics.transpose(0, 1), torch.zeros(1))
 
+    # Combines the sub policies for state in order to return the behvaioral policy.
     def get_policy(self, state, squared_errors=None):
         if squared_errors is None:
             truth = self.random_network(state)
@@ -183,16 +186,19 @@ class LODA:
         policy = Categorical(logits = offset_logits)
         return policy
 
+    # Returns the sub policies for state.
     def get_sub_policies(self, state):
         logits = self.policies(state)
         offset_logits = logits - torch.max(logits, dim=-1, keepdim=True)[0]
         policy = Categorical(logits = offset_logits)
         return policy
 
+    # Selects an action for state.
     def select_action(self, state):
         policy = self.get_policy(state)
         return policy.sample().item()
 
+    # Starts the agent on a new episode.
     def start(self, state, reset=True):
         if reset:
             # Reset buffers 
@@ -235,6 +241,7 @@ class LODA:
         # Return action
         return self.action_buffer[self.position].int().item() 
 
+    # Agent takes a step in episode.
     def step(self, state, reward, done):
         state = torch.from_numpy(state)
         prev_state = self.state_buffer[self.position]
@@ -283,6 +290,7 @@ class LODA:
 
     def update(self, current_state, done):
         assert self.filled
+        # Optimize Critic
         if self.non_linear_critic:
             critic_vals = self.critique(self.state_buffer)
             intrinsic_vals = self.intrinsic_value_buffer + 0
@@ -302,6 +310,7 @@ class LODA:
         if not done:
             next_val = self.critique(current_state).detach()
             critic_vals += next_val * self.traces.view(-1, 1)
+        # Collecting data.
         intrinsic_advantages = self.intrinsic_value_buffer - critic_vals.transpose(0,1)[:-1].transpose(0,1)
         self.intrinsic_advantages.append((intrinsic_advantages).mean())
         self.intrinsic_errors.append((intrinsic_advantages * intrinsic_advantages).mean())
@@ -310,9 +319,10 @@ class LODA:
         self.external_errors.append((external_advantages * external_advantages).mean())
         self.optimization_dones.append(1 if done else 0)
         #total_advantages = (intrinsic_advantages * self.intrinsic_weight) + external_advantages.view(-1, 1)
-        # normalize advantages
+        # Normalize extrinsic and intrinsic advantages seperately
         normalized_external = (external_advantages - external_advantages.mean()) / (external_advantages.std() + 1e-7)
         normalized_intrinsic = (intrinsic_advantages - intrinsic_advantages.mean()) / (intrinsic_advantages.std() + 1e-7)
+        # Combine normalized extrinsic and intrinsic advantages
         normalized_advantages = (normalized_intrinsic * self.intrinsic_weight) + normalized_external.view(-1, 1) #(total_advantages - total_advantages.mean()) / (total_advantages.std() + 1e-7)
         policies = self.get_sub_policies(self.state_buffer)
         log_probs = policies.log_prob(self.action_buffer.view(-1, 1))
@@ -329,7 +339,7 @@ class LODA:
         loss.backward()
         self.policy_optimizer.step()
 
-
+    # Interact with env (steps) number of steps, reseting when needed.
     def run_steps(self, env, verbose, steps, info='', render=False):
         done = False
         step = 0
